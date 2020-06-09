@@ -1,4 +1,94 @@
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+class Picker extends StatefulWidget {
+  const Picker({Key key, this.type}) : super(key : key);
+
+  final Picker type;
+
+  @override
+  _PickerState createState() => _PickerState();
+}
+
+class _PickerState extends State<Picker>{
+  DateTime _fromDate = DateTime.now();
+  TimeOfDay _fromTime = TimeOfDay.fromDateTime(DateTime.now());
+  List<DateTime> dtList = [DateTime.now()];
+
+  String get _title{
+    return "To do list";
+  }
+
+  String get _labelText{
+    return DateFormat.yMMMd().format(_fromDate);
+  }
+
+  Widget buildlist()
+  {
+    ListView lv = ListView.builder(
+        itemCount: dtList.length,
+        itemBuilder: (BuildContext context, int index) {
+          return Container(
+            height: 50,
+            child: Center(child: Text(DateFormat.yMMMd().format(dtList[index]))),
+          );
+        }
+    );
+    return lv;
+  }
+
+  Future<void> _showDatePicker() async {
+    final picked = await showDatePicker(
+        context: context,
+        initialDate: _fromDate,
+        firstDate: DateTime(2015, 1),
+        lastDate: DateTime(2100),
+    );
+    setState(() {
+      _fromDate = picked;
+      dtList.add(picked);
+    });
+  }
+
+  void _showInputField () {
+    Navigator.push(context,
+      MaterialPageRoute<void>(builder: (BuildContext context){
+        return inputToDoTextField();
+      })
+    );
+  }
+
+  @override
+  Widget build(BuildContext context){
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_title),
+      ),
+      body:Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            //Text(_labelText),
+            const SizedBox(height: 16),
+            new Expanded(
+                child: buildlist()
+            ),
+            IconButton(
+              icon: Icon(Icons.add),
+              onPressed: (){
+                //_showDatePicker();
+                _showInputField();
+              },
+            ),
+          ],
+        ),
+      )
+    );
+  }
+}
 
 void main() {
   runApp(MyApp());
@@ -26,145 +116,131 @@ class MyApp extends StatelessWidget {
         // closer together (more dense) than on mobile platforms.
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      //home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: Picker(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  //_MyHomePageState createState() => _MyHomePageState();
-  State createState() => MyButton();
-}
-
-class MyButton extends State<MyHomePage> {
-  String _buttonState;
-
-  @override
-  void initState() {
-    super.initState();
-    _buttonState = 'OFF';
-  }
+class inputToDoTextField extends StatelessWidget {
+  const inputToDoTextField();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Text(widget.title),
-        ),
-        body : Center(
-            child: Column(
-              children: <Widget>[RaisedButton(
-                child: Text('버튼을 누르세요'),
-                onPressed: () => _onClickButton(context),
-            )],
-          )
-      )
+      appBar: AppBar(
+        // automaticallyImplyLeading - leading(제목앞에 표시할 Widget)이 Null인 경우 leading을 자동적으로 추론할것인지?
+        automaticallyImplyLeading: true,
+        title: Text("새 할일 추가"),
+      ),
+      body: const inputForm(),
     );
   }
-  void _onClickButton(BuildContext context)
-  {
-    Navigator.push(context, MaterialPageRoute(builder: (context)=> ImageContainer()));
-  }
-
 }
 
-class ImageContainer extends StatelessWidget{
+class inputForm extends StatefulWidget{
+  const inputForm({Key key}) : super(key: key);
+
   @override
-  Widget build(BuildContext context) {
-    final _body = GestureDetector(
-      onTap: () => _onTap(context),
-      child: Container(
-        child: Image.asset("assets/strikeout.jpg")
-      )
-    );
-
-    return Scaffold(body: _body);
-  }
-
-  void _onTap(BuildContext context){
-    Navigator.pop(context);
-  }
+  inputFormState createState() => inputFormState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class ToDoData{
+  DateTime deadLine;
+  String brief;
+  String detail;
+}
 
-  void _incrementCounter() {
+class inputFormState extends State<inputForm>{
+  ToDoData m_todo = ToDoData();
+  DateTime _fromDate = DateTime.now();
+  final m_formKey = GlobalKey<FormState>();
+
+  void _handleSubmitted() {
+    if (m_formKey.currentState.validate()){
+      m_formKey.currentState.save();
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _showDatePicker() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _fromDate,
+      firstDate: DateTime(2015, 1),
+      lastDate: DateTime(2100),
+    );
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _fromDate = picked;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    const spaceBox = SizedBox(height: 24);
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
+      body:
+        Form(
+          key: m_formKey,
+          child: Scrollbar(
+            child: SingleChildScrollView(
+              dragStartBehavior: DragStartBehavior.down,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                 children: [
+                   spaceBox,
+                   Row(
+                     children: [
+                       Text(
+                           DateFormat.yMMMd().format(_fromDate),
+                       ),
+                       IconButton(
+                         icon: Icon(Icons.add_alarm),
+                         onPressed: _showDatePicker,
+                       )
+                     ],
+                   ),
+                   spaceBox,
+                   TextFormField(
+                     decoration: InputDecoration(
+                       border: const OutlineInputBorder(),
+                       labelText: "할 일",
+                     ),
+                     maxLines: 1,
+                     onSaved: (String _value) {
+                       m_todo.brief = _value;
+                     },
+                     validator: (String value){
+                       if (value.isEmpty == true){
+                         return '할 일을 입력해 주세요.';
+                       }
+                       return null;
+                     },
+                   ),
+                   spaceBox,
+                   TextFormField(
+                     decoration: InputDecoration(
+                       border: const OutlineInputBorder(),
+                       labelText: "상세",
+                     ),
+                     maxLines: 3,
+                     onSaved: (String _value){
+                       m_todo.detail = _value;
+                     },
+                   ),
+                   spaceBox,
+                   Center(
+                     child:IconButton(
+                       icon: Icon(Icons.check),
+                       onPressed: _handleSubmitted,
+                     ),
+                   )
+                 ],
+              ),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
