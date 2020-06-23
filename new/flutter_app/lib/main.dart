@@ -3,6 +3,10 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart' as path;
+import 'dart:developer' as developer;
+import 'inputToDoTextField.dart';
 
 class Picker extends StatefulWidget {
   const Picker({Key key, this.type}) : super(key : key);
@@ -16,7 +20,33 @@ class Picker extends StatefulWidget {
 class _PickerState extends State<Picker>{
   DateTime _fromDate = DateTime.now();
   TimeOfDay _fromTime = TimeOfDay.fromDateTime(DateTime.now());
-  List<DateTime> dtList = [DateTime.now()];
+  List<ToDoData> TodoList = new List<ToDoData>();
+  Database m_toDoDB;
+
+  @override
+  initState()
+  {
+    super.initState();
+    openDataBase();
+    //getData();
+  }
+
+  openDataBase() async
+  {
+    final dbPath = path.join(await getDatabasesPath(), 'todo_database.db');
+    m_toDoDB = await openDatabase(
+      dbPath,
+      onCreate:(db, version){
+        return db.execute("CREATE TABLE todo(_index INTEGER PRIMARY KEY, deadline TEXT, brief TEXT, detail TEXT)",);
+      },
+      version: 1,
+    );
+    m_toDoDB.execute("CREATE TABLE todo(_index INTEGER PRIMARY KEY, deadline TEXT, brief TEXT, detail TEXT)",);
+    //m_toDoDB.delete('todo');
+    await getData();
+  }
+
+
 
   String get _title{
     return "To do list";
@@ -26,38 +56,127 @@ class _PickerState extends State<Picker>{
     return DateFormat.yMMMd().format(_fromDate);
   }
 
+  void getData() async {
+    final List<Map<String, dynamic>> dataMaps = await m_toDoDB.query('todo');
+
+    //await Future.delayed(Duration(seconds:2));
+    //return TodoList;
+
+    TodoList = (List.generate(dataMaps.length, (i){
+      developer.log(i.toString());
+      return ToDoData(
+        index: dataMaps[i]['_index'],
+        deadLine: DateTime.now(),
+        brief: dataMaps[i]['brief'],
+        detail: dataMaps[i]['detail'],
+      );
+    })
+    );
+
+    setState(() {
+
+    });
+    //return TodoList;
+  }
+
   Widget buildlist()
   {
+    if(TodoList == null)
+      return Text("null");
+
+    developer.log(TodoList.toString());
+    developer.log(TodoList.length.toString());
+
     ListView lv = ListView.builder(
-        itemCount: dtList.length,
+        //itemCount: dtList.length,
+        shrinkWrap: true,
+        //padding: EdgeInsets.all(0.0),
+        itemCount: TodoList.length,
         itemBuilder: (BuildContext context, int index) {
           return Container(
-            height: 50,
-            child: Center(child: Text(DateFormat.yMMMd().format(dtList[index]))),
+            margin: EdgeInsets.only(bottom: 10.0),
+            decoration: BoxDecoration(
+              border: Border.all(),
+            ),
+            //child: Center(child: Text(DateFormat.yMMMd().format(dtList[index]))),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child:
+                  Column(
+                    children: <Widget>[
+                      Center(child: Text(DateFormat.yMMMd().format(TodoList[index].deadLine))),
+                      Container(
+                        padding: EdgeInsets.all(10.0),
+                        child: Text(TodoList[index].brief,
+                          textAlign: TextAlign.left,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  alignment: Alignment.centerRight,
+                  icon: Icon(Icons.delete),
+                  onPressed: (){
+                    //m_toDoDB.execute("CREATE TABLE todo(_index INTEGER PRIMARY KEY, deadline TEXT, brief TEXT, detail TEXT)",);
+                    int theint = TodoList[index].index;
+                    String a = "DELETE FROM todo WHERE _index = $theint";
+                    developer.log(a);
+                    m_toDoDB.execute(a);
+                    TodoList.removeAt(index);
+                    setState(() {
+
+                    });
+                  },
+                ),
+              ],
+            ) // child: Center(child: Text("gg"))
           );
         }
     );
+
+    developer.log(TodoList.toString());
+
     return lv;
   }
 
-  Future<void> _showDatePicker() async {
-    final picked = await showDatePicker(
-        context: context,
-        initialDate: _fromDate,
-        firstDate: DateTime(2015, 1),
-        lastDate: DateTime(2100),
+  void _showInputField () async {
+    Object result = await Navigator.push(context,
+      MaterialPageRoute<void>(builder: (BuildContext context) => inputToDoTextField()),
     );
+
+    ToDoData newTodo = result as ToDoData;
+    if(newTodo.detail == null) {
+      developer.log("null");
+      setState(() {
+
+      });
+      return;
+    }
+    TodoList.add(result as ToDoData);
+    await _saveToDB(result as ToDoData);
+    developer.log("saved");
     setState(() {
-      _fromDate = picked;
-      dtList.add(picked);
+
     });
   }
 
-  void _showInputField () {
-    Navigator.push(context,
-      MaterialPageRoute<void>(builder: (BuildContext context){
-        return inputToDoTextField();
-      })
+  void _saveToDB(ToDoData _new) async {
+    final List<Map<String, dynamic>> dataMaps = await m_toDoDB.query('todo');
+
+    int _indexvalue = 0;
+    if(dataMaps.length == 0){
+      _indexvalue = 1;
+    }
+    else {
+      Map<String, dynamic> map = dataMaps[dataMaps.length - 1];
+      _indexvalue = map["_index"]+1;
+    }
+    await m_toDoDB.insert(
+      'todo',
+      _new.toMap(_indexvalue),
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
@@ -69,20 +188,61 @@ class _PickerState extends State<Picker>{
       ),
       body:Center(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisSize: MainAxisSize.max,
           children: [
             //Text(_labelText),
             const SizedBox(height: 16),
-            new Expanded(
-                child: buildlist()
+            /*
+            new FutureBuilder(
+                //future: buildlist(),
+                future: this.getData(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData == false)
+                    //return new Expanded(child: buildlist());
+                    //return Text("GET");
+                    return CircularProgressIndicator();
+                  else if (snapshot.hasError == true) {
+                    return Text("ERROR!");
+                  }
+                  else {
+                    return new Expanded(child: buildlist());
+                    //return Text("END");
+                  }
+                }
+              ),
+             */
+            Expanded(
+              child: buildlist(),
             ),
-            IconButton(
-              icon: Icon(Icons.add),
-              onPressed: (){
-                //_showDatePicker();
-                _showInputField();
-              },
-            ),
+            Align(
+              alignment: FractionalOffset.bottomCenter,
+              child:Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children:[
+                  IconButton(
+                    alignment: Alignment.center,
+
+                    icon: Icon(Icons.add),
+                    onPressed: (){
+                      //_showDatePicker();
+                      _showInputField();
+                    },
+                  ),
+                  IconButton(
+                    alignment: Alignment.center,
+                    icon: Icon(Icons.delete),
+                    onPressed: (){
+                      m_toDoDB.delete('todo');
+                      m_toDoDB.execute("CREATE TABLE todo(_index INTEGER PRIMARY KEY, deadline TEXT, brief TEXT, detail TEXT)",);
+                      TodoList.clear();
+                      setState(() {
+                      });
+                    },
+                  )
+                ]
+              ),
+            )
           ],
         ),
       )
@@ -90,7 +250,7 @@ class _PickerState extends State<Picker>{
   }
 }
 
-void main() {
+void main() async{
   runApp(MyApp());
 }
 
@@ -120,127 +280,5 @@ class MyApp extends StatelessWidget {
       home: Picker(),
     );
   }
-}
 
-class inputToDoTextField extends StatelessWidget {
-  const inputToDoTextField();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        // automaticallyImplyLeading - leading(제목앞에 표시할 Widget)이 Null인 경우 leading을 자동적으로 추론할것인지?
-        automaticallyImplyLeading: true,
-        title: Text("새 할일 추가"),
-      ),
-      body: const inputForm(),
-    );
-  }
-}
-
-class inputForm extends StatefulWidget{
-  const inputForm({Key key}) : super(key: key);
-
-  @override
-  inputFormState createState() => inputFormState();
-}
-
-class ToDoData{
-  DateTime deadLine;
-  String brief;
-  String detail;
-}
-
-class inputFormState extends State<inputForm>{
-  ToDoData m_todo = ToDoData();
-  DateTime _fromDate = DateTime.now();
-  final m_formKey = GlobalKey<FormState>();
-
-  void _handleSubmitted() {
-    if (m_formKey.currentState.validate()){
-      m_formKey.currentState.save();
-      Navigator.pop(context);
-    }
-  }
-
-  Future<void> _showDatePicker() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _fromDate,
-      firstDate: DateTime(2015, 1),
-      lastDate: DateTime(2100),
-    );
-    setState(() {
-      _fromDate = picked;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    const spaceBox = SizedBox(height: 24);
-    return Scaffold(
-      body:
-        Form(
-          key: m_formKey,
-          child: Scrollbar(
-            child: SingleChildScrollView(
-              dragStartBehavior: DragStartBehavior.down,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                 children: [
-                   spaceBox,
-                   Row(
-                     children: [
-                       Text(
-                           DateFormat.yMMMd().format(_fromDate),
-                       ),
-                       IconButton(
-                         icon: Icon(Icons.add_alarm),
-                         onPressed: _showDatePicker,
-                       )
-                     ],
-                   ),
-                   spaceBox,
-                   TextFormField(
-                     decoration: InputDecoration(
-                       border: const OutlineInputBorder(),
-                       labelText: "할 일",
-                     ),
-                     maxLines: 1,
-                     onSaved: (String _value) {
-                       m_todo.brief = _value;
-                     },
-                     validator: (String value){
-                       if (value.isEmpty == true){
-                         return '할 일을 입력해 주세요.';
-                       }
-                       return null;
-                     },
-                   ),
-                   spaceBox,
-                   TextFormField(
-                     decoration: InputDecoration(
-                       border: const OutlineInputBorder(),
-                       labelText: "상세",
-                     ),
-                     maxLines: 3,
-                     onSaved: (String _value){
-                       m_todo.detail = _value;
-                     },
-                   ),
-                   spaceBox,
-                   Center(
-                     child:IconButton(
-                       icon: Icon(Icons.check),
-                       onPressed: _handleSubmitted,
-                     ),
-                   )
-                 ],
-              ),
-            ),
-          ),
-        ),
-    );
-  }
 }
