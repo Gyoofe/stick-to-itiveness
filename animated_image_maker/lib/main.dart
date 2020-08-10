@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:animatedimagemaker/TabStyleMainView.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import 'download.dart';
 import 'gifMaker.dart';
+import 'TabStyleMainView.dart';
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(new MyApp());
+  //runApp(new MyApp());
+  runApp(new TabStyleMainView());
 }
 
 class MyApp extends StatefulWidget {

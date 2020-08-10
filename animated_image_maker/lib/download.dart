@@ -82,7 +82,7 @@ void downloadYoutube(String _youtubeURL, var progressCallback) async
 
     // Calculate the current progress.
     print('${((count / len) * 100).ceil()}');
-    progressCallback('${((count / len) * 100).ceil()}');6
+    progressCallback('${((count / len) * 100).ceil()}');
 
     // Write to file.
     output.add(data);
