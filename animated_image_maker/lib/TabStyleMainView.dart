@@ -1,4 +1,5 @@
 import 'package:animatedimagemaker/TabControllerWidgets/TabStyle.dart';
+import 'package:animatedimagemaker/tabBarViewer/tabBarViewer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -45,12 +46,13 @@ class _GifMakerTabControllerState extends State<GifMakerTabController>{
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        //
         backgroundColor: widget.tabStyle.tabControllerBackgroundColor,
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
           bottom: TabBar(
-            unselectedLabelColor: Colors.blue,
+            unselectedLabelColor: widget.tabStyle.unselectedColor,
             onTap: (int index){
               setState(() {
                 widget.tabStyle.SetStyle(index);
@@ -58,7 +60,7 @@ class _GifMakerTabControllerState extends State<GifMakerTabController>{
             },
             indicator: BoxDecoration(
               borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(10)),
-              color: Colors.redAccent,
+              color: widget.tabStyle.tabBoxColor,
             ),
             tabs:[
               //YoutubeTab(),
@@ -72,7 +74,9 @@ class _GifMakerTabControllerState extends State<GifMakerTabController>{
           ),
         ),
         body: TabBarView(children: <Widget>[
-          Icon(Icons.play_arrow),
+          new SingleChildScrollView(
+            child:TabBarViewer(),
+          ),
           Icon(Icons.movie),
         ]),
       ),

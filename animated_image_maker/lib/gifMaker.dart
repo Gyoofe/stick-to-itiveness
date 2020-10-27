@@ -10,7 +10,7 @@ class gifMaker
 
   var _pipePath;
 
-  void makeGIF(String startTime, String endTime) async
+  Future<String> makeGIF(String startTime, String endTime) async
   {
     _fFmpegConfig.enableLogCallback((level, message) => print("output ${message}"));
 
@@ -30,7 +30,7 @@ class gifMaker
 
     var duration = (_endTime-_startTime).toString();
 
-    String gifOption = '"fps=10,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"';
+    String gifOption = '"fps=30,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"';
     //String inputFilePath = "/data/user/0/com.example.animatedimagemaker/app_flutter/downloads/download.mp4";
     String inputFilePath = '${appDocDirectory.path}/downloads/download.mp4';
     var FFmpegCommand = "-nostdin -ss ${startTime} -t ${duration} -i ${inputFilePath} -vf ${gifOption} -loop 0 ${outputfilepath}";
@@ -38,13 +38,13 @@ class gifMaker
 
     print(FFmpegCommand);
 
-    executeFFmpeg("${FFmpegCommand}").then((rc) => print("FFMPEG PROCESS EXITED WITH RC $rc"));
+    await executeFFmpeg("${FFmpegCommand}").then((rc) => print("FFMPEG PROCESS EXITED WITH RC $rc"));
 //    executeFFmpeg("-nostdin -ss 60 -i /data/user/0/com.example.animatedimagemaker/app_flutter/downloads/download.mp4 -pix_fmt yuvj422p -q:v 2 -frames:v 1 /storage/emulated/0/Android/data/com.example.animatedimagemaker/files/download.jpg")
 //        .then((rc) => print("FFMPEG PROCESS EXITED WITH RC $rc"));
 
     //_flutterFFprobe.getMediaInformation("/storage/emulated/0/Android/data/com.example.animatedimagemaker/files/download.gif").then((info)=>print("gif : ${info}"));
 
-    return;
+    return outputfilepath;
   }
 
 
@@ -70,7 +70,7 @@ class gifMaker
 
    print("${outputfilepath}");
 
-   executeFFmpeg("-nostdin -ss 60 -i /data/user/0/com.example.animatedimagemaker/app_flutter/downloads/download.mp4 -pix_fmt yuvj422p -q:v 2 -frames:v 1 /storage/emulated/0/Android/data/com.example.animatedimagemaker/files/download.jpg")
+   await executeFFmpeg("-nostdin -ss 60 -i /data/user/0/com.example.animatedimagemaker/app_flutter/downloads/download.mp4 -pix_fmt yuvj422p -q:v 2 -frames:v 1 /storage/emulated/0/Android/data/com.example.animatedimagemaker/files/download.jpg")
        .then((rc) => print("FFMPEG PROCESS EXITED WITH RC $rc"));
 
    _flutterFFprobe.getMediaInformation("/storage/emulated/0/Android/data/com.example.animatedimagemaker/files/download.jpg").then((info)=>print("jpg : ${info}"));

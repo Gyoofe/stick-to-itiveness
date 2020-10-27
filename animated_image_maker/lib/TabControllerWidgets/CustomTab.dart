@@ -13,7 +13,6 @@ class YoutubeTab extends StatelessWidget
       child: Container(
         decoration: BoxDecoration(
             borderRadius: BorderRadius.vertical(),
-            color: Colors.redAccent
         ),
         child: Align(
           alignment: Alignment.center,
@@ -33,7 +32,6 @@ class TwitchTab extends StatelessWidget
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.vertical(),
-          color: Colors.purple
         ),
         child: Align(
           alignment: Alignment.center,

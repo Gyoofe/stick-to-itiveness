@@ -7,6 +7,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'download.dart';
 import 'gifMaker.dart';
 import 'TabStyleMainView.dart';
+import 'Youtube/YoutubeSearch.dart';
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -156,12 +157,23 @@ class _InAppWebViewExampleScreenState extends State<InAppWebViewExampleScreen> {
 //                    },
                   )
               ),
-              TextField(
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Youtube URL'
-                ),
-                controller: youtubeURLController,
+              Row(
+                children: <Widget>[
+                  Expanded(
+                      child:TextField(
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: 'Youtube URL'
+                        ),
+                        controller: youtubeURLController,
+                      )
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.search),
+                    onPressed: (){
+                      showSearch(context: context, delegate: YoutubeSearchBar());
+                    })
+                ]
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
