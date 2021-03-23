@@ -2,7 +2,6 @@ import 'package:animatedimagemaker/TabControllerWidgets/TabStyle.dart';
 import 'package:animatedimagemaker/tabBarViewer/tabBarViewer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import 'TabControllerWidgets/CustomTab.dart';
 
@@ -14,6 +13,7 @@ class TabStyleMainView extends StatelessWidget{
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
+
         home: GifMakerTabController(),
     );
   }
@@ -42,7 +42,6 @@ class _GifMakerTabControllerState extends State<GifMakerTabController>{
     setState(() {
 
     });
-
     return DefaultTabController(
       length: 2,
       child: Scaffold(

@@ -1,14 +1,14 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
-void extract() async
+Future extract(String _youtubeURL) async
 {
   var yt = YoutubeExplode();
 
-  var video = await yt.videos.get('https://www.youtube.com/watch?v=MagwWdiDry8&feature=youtu.be&t=4');
+  String url = "https://www.youtube.com/watch?v=" + _youtubeURL;
+  var video = await yt.videos.get(url);
 
   var title = video.title;
   var author = video.author;
@@ -17,15 +17,31 @@ void extract() async
   print('${title}');
   print('${author}');
   print('${duration}');
+
+  return video.duration;
 }
 
 void downloadYoutube(String _youtubeURL, var progressCallback) async
 {
   var yt = YoutubeExplode();
-
-  String url = "https://www.youtube.com/watch?v=" + _youtubeURL;
+  List<String> splits = _youtubeURL.split("/");
+  String url = "https://www.youtube.com/watch?v=" + splits.last;
   var info = await yt.videos.get(url);
-  var manifest = await yt.videos.streamsClient.getManifest(_youtubeURL);
+
+  var title = info.title;
+  var author = info.author;
+  var duration = info.duration;
+
+  print('${title}');
+  print('${author}');
+  print('${duration}');
+
+  print(url);
+  print("GKGKGKGKGKWKGKSKG");
+  print(_youtubeURL);
+  print(splits.last);
+  var manifest = await yt.videos.streamsClient.getManifest(url);
+  print("manifest");
   var stream = manifest.muxed;
   var videos = stream.sortByVideoQuality().first;
   var videoStream = yt.videos.streamsClient.get(videos);

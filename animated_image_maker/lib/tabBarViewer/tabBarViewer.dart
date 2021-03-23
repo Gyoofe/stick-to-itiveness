@@ -1,30 +1,43 @@
+import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:animatedimagemaker/Youtube/YoutubeSearchBar.dart';
+import 'package:animatedimagemaker/Youtube/YoutubeVideoInfo.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:animatedimagemaker/tabBarViewer/webViewerData.dart';
 import 'package:animatedimagemaker/download.dart';
 import 'package:animatedimagemaker/gifMaker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:share/share.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:downloads_path_provider/downloads_path_provider.dart';
+import 'dart:math';
 
 import 'package:percent_indicator/percent_indicator.dart';
-import '../Youtube/YoutubeSearch.dart';
 
 class TabBarViewer extends StatefulWidget
 {
   @override
-  _TabBarViewerState createState() => _TabBarViewerState();
+  TabBarViewerState createState() => TabBarViewerState();
 }
 
-class _TabBarViewerState extends State<TabBarViewer>
+class TabBarViewerState extends State<TabBarViewer>
 {
+  final videoInfo = new YoutubeVideoInfo();
+
   final _WebViewerData = new WebData();
   final youtubeURLController = new TextEditingController();
   final startTimeController = new TextEditingController();
   final endTimeController = new TextEditingController();
   String makebuttonText = "make!";
   String percentage = "0";
+  String circularMessage = "Ready";
+  double circularRadius = 150;
   String outputFilePath;
+  String endTimeLable = "00:00";
   bool visibleProgress = false;
   bool visibleImage = false;
   FileImage img = FileImage(File('/storage/emulated/0/Android/data/com.example.animatedimagemaker/files/download.gif'));
@@ -35,7 +48,7 @@ class _TabBarViewerState extends State<TabBarViewer>
 
   void _make()
   {
-    _WebViewerData.iframeUrl = "https://www.youtube.com/embed/" + youtubeURLController.text;
+    //_WebViewerData.iframeUrl = "https://www.youtube.com/embed/" + youtubeURLController.text;
     downloadAndMakeGifs(_WebViewerData.iframeUrl);
     setState(() {
       print(_WebViewerData.iframeUrl);
@@ -45,11 +58,61 @@ class _TabBarViewerState extends State<TabBarViewer>
     });
   }
 
+  format(Duration d) => d.toString().split('.').first.padLeft(8,"0");
+  
+  void popMake() async
+  {
+    _WebViewerData.iframeUrl = "https://www.youtube.com/embed/" + videoInfo.videoId;
+    print(videoInfo.videoId);
+    var durations = await extract(_WebViewerData.iframeUrl);
+    endTimeLable = format(durations).toString();
+    setState(() {
+      print(_WebViewerData.iframeUrl);
+      webViewCon.loadData(data: _WebViewerData.getWebViewData());
+      visibleProgress = true;
+      visibleImage = false;
+    });
+  }
+
+  Future<File> saveFile() async{
+    var status = await Permission.storage.status;
+    if (!status.isGranted){
+      await Permission.storage.request();
+    }
+
+    Directory tempDir = await DownloadsPathProvider.downloadsDirectory;
+
+    var random = Random.secure();
+    var values = List<int>.generate(10, (index) => random.nextInt(255));
+    String name = base64UrlEncode(values);
+
+    String tempPath = tempDir.path;
+    var filePath = tempPath + '/$name' + '.gif';
+
+    Uint8List _data = await img.file.readAsBytes();
+    var bytes = ByteData.view(_data.buffer);
+    final buffer = bytes.buffer;
+
+    print("saves");
+
+    return File(filePath).writeAsBytes(buffer.asUint8List(_data.offsetInBytes, _data.lengthInBytes));
+  }
+
+
   void downloadAndMakeGifs(String _url) async
   {
+    visibleImage = false;
+    percentage = "0";
+    circularMessage = percentage + "%";
+    circularRadius = 150;
     await downloadYoutube(_url, progressCallback);
     var gif = gifMaker();
+    circularMessage = "Generating Gif...";
+    setState(() {
+
+    });
     String output = await gif.makeGIF(startTimeController.text, endTimeController.text);
+    circularRadius = 0;
     setState(() {
       imageCache.clear();
       outputFilePath = output;
@@ -63,7 +126,7 @@ class _TabBarViewerState extends State<TabBarViewer>
   {
     setState(() {
       percentage = _text;
-
+      circularMessage = percentage + "%";
     });
   }
 
@@ -71,17 +134,15 @@ class _TabBarViewerState extends State<TabBarViewer>
   @override
   Widget build(BuildContext context) {
     return Container(
-        margin: const EdgeInsets.all(5.0),
         width: double.infinity,
         //color: Colors.white,
       child:Column(
         children: <Widget>[
-          SizedBox(
-            height: 20,
+          Container(
+            child: YoutubeSearchBar(videoInfo, this),
           ),
           Container(
-            width: 640,
-            height: 160,
+              height: 260,
               child: InAppWebView(
                 initialData: InAppWebViewInitialData(
                     data: _WebViewerData.getWebViewData(),
@@ -97,106 +158,177 @@ class _TabBarViewerState extends State<TabBarViewer>
                 onLoadStart: (InAppWebViewController controller, String url) {},
               ),
           ),
-          SizedBox(
-            height: 50,
-            //child: Container(color: Colors, margin: EdgeInsets.only(bottom: 5)),
-          ),
-          new Theme(
-            data: new ThemeData(
-              primaryColor: Colors.redAccent,
-              primaryColorDark: Colors.blue,
-            ),
-            child:Row(
-              children:<Widget>[
-                Expanded(
-                  child:TextField(
-                    decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.redAccent,width: 5.0),
-                        ),
-                        labelText: 'Youtube URL',
-                        fillColor: Colors.redAccent,
-                    ),
-                    controller: youtubeURLController,
-                  )
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Container(
+                  color: Colors.black12,
+                  height: 5,
                 ),
-                IconButton(
-                    icon: Icon(Icons.search),
-                    onPressed: (){
-                      showSearch(context: context, delegate: YoutubeSearchBar());
-                    })
-            ])
+              )
+            ],
           ),
-          SizedBox(
-            height: 3,
-          ),
-          new Theme(
-            data: new ThemeData(
-              primaryColor: Colors.redAccent,
-              primaryColorDark: Colors.white,
-              secondaryHeaderColor: Colors.white,
-            ),
-            child:Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          Container(
+            color: Colors.white,
+            child: Row(
               children: <Widget>[
-                Flexible(
-                  child:TextField(
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.redAccent,width: 5.0),
-                      ),
-                      labelText: '00:00',
-                    ),
-                    controller: startTimeController,
-                  ),
-                ),
-                Flexible(
-                  child:TextField(
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: '00:00',
-                    ),
-                    controller: endTimeController,
-                  ),
+                Padding(
+                  padding: const EdgeInsets.only(top:15.0, bottom: 0.0, left: 12.0, right: 12.0),
+                  child: Text(
+                      "시간 설정",
+                      style: TextStyle(backgroundColor: Colors.white, fontSize:15)
+                      ,textAlign: TextAlign.left),
                 ),
               ],
             ),
           ),
           new Theme(
             data: new ThemeData(
-              buttonTheme: ButtonThemeData(
-                buttonColor: Colors.white,
-                textTheme: ButtonTextTheme.accent,
-                colorScheme:
-                  Theme.of(context).colorScheme.copyWith(secondary: Colors.redAccent),
-              )
+              primaryColor: Colors.redAccent,
+              primaryColorDark: Colors.redAccent,
+              secondaryHeaderColor: Colors.black,
+              backgroundColor: Colors.black,
             ),
-            child:RaisedButton(
-              child: Text("${makebuttonText}"),
+            child:Container(
               color: Colors.white,
-              onPressed: _make,
-            )
-          ),
-          Container(
-            child: Visibility(
-              child: new CircularPercentIndicator(
-                radius: 60.0,
-                lineWidth: 5.0,
-                percent: int.parse(percentage)/100,
-                center: new Text("${percentage}%"),
-                progressColor: Colors.green,
+              padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 12.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Flexible(
+                    child:TextField(
+                      decoration: InputDecoration(
+                        focusColor: Colors.redAccent,
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.redAccent,width: 5.0),
+                        ),
+                        labelText: '00:00',
+                      ),
+                      controller: startTimeController,
+                    ),
+                  ),
+                  Text(" ~ "),
+                  Flexible(
+                    child:TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: endTimeLable.toString(),
+                      ),
+                      controller: endTimeController,
+                    ),
+                  ),
+                ],
               ),
-              visible: visibleProgress,
             ),
           ),
-          Container(
-            child: Visibility(
-              child: new Image(
-                image: img,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Container(
+                  color: Colors.black12,
+                  height: 5,
+                ),
+              )
+            ],
+          ),
+          Visibility(
+            child: Expanded(
+              child: Container(
+                alignment: Alignment.center,
+                color:Colors.white,
+                child: Visibility(
+                  child: new CircularPercentIndicator(
+                    radius: circularRadius,
+                    backgroundColor: Colors.white,
+                    percent: int.parse(percentage)/110,
+                    center: new Text("${circularMessage}", style: new TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0)),
+                    progressColor: Colors.redAccent,
+                  ),
+                  visible: !visibleImage,
+                ),
               ),
-              visible: visibleImage,
             ),
-          )
+            visible: !visibleImage,
+          ),
+          Visibility(
+            child: Expanded(
+              child: Container(
+                padding: EdgeInsets.only(top:15.0, left: 12.0, right: 12.0),
+                color:Colors.white,
+                child: Column(
+                  children:<Widget>[
+                    Visibility(
+                      child: new Image(
+                        image: img,
+                      ),
+                      visible: visibleImage,
+                    ),
+                    Expanded(
+                      child: Container(
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
+            visible: visibleImage,
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Container(
+                  color: Colors.black12,
+                  height: 1,
+                ),
+              )
+            ],
+          ),
+          Container(
+            color: Colors.white,
+            child: Row(
+              children: <Widget>[
+                IconButton(
+                    icon: Icon(Icons.save_alt, color: Colors.black,),
+                    onPressed: (){
+                      saveFile();
+                    }
+                ),
+                Expanded(
+                  child: Column(
+                    children: <Widget>[
+                      new Theme(
+                          data: new ThemeData(
+                              buttonTheme: ButtonThemeData(
+                                buttonColor: Colors.white,
+                                textTheme: ButtonTextTheme.accent,
+                                colorScheme:
+                                Theme.of(context).colorScheme.copyWith(secondary: Colors.redAccent),
+                              )
+                          ),
+                          child:RaisedButton(
+                            child: Text("${makebuttonText}"),
+                            color: Colors.white,
+                            onPressed: _make,
+                          )
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.share, color: Colors.black,),
+                  onPressed: (){
+                    List<String> paths = List<String>();
+                    paths.add(img.file.path);
+                    Share.shareFiles(paths);
+                  },
+                ),
+              ],
+            ),
+          ),
         ],
       )
     );

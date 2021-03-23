@@ -21,7 +21,7 @@ class WebData
         <title>Flutter InAppWebView</title>
     </head>
     <body>
-          <iframe src="$_iframeUrl" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
+          <iframe src="$_iframeUrl" width="100%" height="240px" frameborder="0" allowfullscreen></iframe>
     </body>
 </html>
 """;
