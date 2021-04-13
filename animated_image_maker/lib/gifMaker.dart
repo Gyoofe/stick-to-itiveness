@@ -10,7 +10,7 @@ class gifMaker
 
   var _pipePath;
 
-  Future<String> makeGIF(String startTime, String endTime) async
+  Future<String> makeGIF(String startTime, String endTime, String realURL) async
   {
     _fFmpegConfig.enableLogCallback((level, message) => print("output ${message}"));
 
@@ -33,8 +33,8 @@ class gifMaker
     String gifOption = '"fps=30,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"';
     //String inputFilePath = "/data/user/0/com.example.animatedimagemaker/app_flutter/downloads/download.mp4";
     String inputFilePath = '${appDocDirectory.path}/downloads/download.mp4';
-    var FFmpegCommand = "-nostdin -ss ${startTime} -t ${duration} -i ${inputFilePath} -vf ${gifOption} -loop 0 ${outputfilepath}";
-    //var FFmpegCommand = "-ss ${startTime} -t ${duration} -i "
+    //var FFmpegCommand = "-nostdin -ss ${startTime} -t ${duration} -i ${inputFilePath} -vf ${gifOption} -loop 0 ${outputfilepath}";
+    var FFmpegCommand = "-ss ${startTime} -t ${duration} -i ${realURL} -vf ${gifOption} -loop 0 ${outputfilepath}";
 
 
     print(FFmpegCommand);

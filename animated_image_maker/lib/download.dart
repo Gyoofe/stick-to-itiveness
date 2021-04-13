@@ -21,7 +21,7 @@ Future extract(String _youtubeURL) async
   return video.duration;
 }
 
-void downloadYoutube(String _youtubeURL, var progressCallback) async
+Future<String> downloadYoutube(String _youtubeURL, var progressCallback) async
 {
   var yt = YoutubeExplode();
   List<String> splits = _youtubeURL.split("/");
@@ -48,6 +48,7 @@ void downloadYoutube(String _youtubeURL, var progressCallback) async
   print("STREAM");
   print(manifest.video.first.url);
   print(videos.url);
+  return videos.url.toString();
   print("URL");
 
 

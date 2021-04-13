@@ -15,6 +15,7 @@ import 'package:share/share.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:downloads_path_provider/downloads_path_provider.dart';
 import 'dart:math';
+import 'package:connectivity/connectivity.dart';
 
 import 'package:percent_indicator/percent_indicator.dart';
 
@@ -46,9 +47,13 @@ class TabBarViewerState extends State<TabBarViewer>
   //final _twitchClips = new TwitchClipData();
   InAppWebViewController webViewCon;
 
-  void _make()
+  void _make() async
   {
     //_WebViewerData.iframeUrl = "https://www.youtube.com/embed/" + youtubeURLController.text;
+    bool connection = await checkConecction();
+    if(connection == false)
+      return;
+
     downloadAndMakeGifs(_WebViewerData.iframeUrl);
     setState(() {
       print(_WebViewerData.iframeUrl);
@@ -56,6 +61,52 @@ class TabBarViewerState extends State<TabBarViewer>
       visibleProgress = true;
       visibleImage = false;
     });
+  }
+
+  Future<bool> checkConecction() async{
+    var connection = await (Connectivity().checkConnectivity());
+
+    if (connection == ConnectivityResult.wifi){
+      return true;
+    }
+    else if (connection == ConnectivityResult.mobile){
+      return _showConnectionDialog("모바일 데이터를 사용중입니다.\n 데이터 사용량에 주의하세요.\n 계속 진행하시겠습니까?");
+    }
+    else if (connection == ConnectivityResult.none){
+      showDialog(context: context,
+          builder: (BuildContext context){
+            return AlertDialog(
+              content: new Text("인터넷에 연결되어 있지 않습니다."),
+              actions: <Widget>[
+                new TextButton(onPressed: (){
+                Navigator.pop(context, true);
+                }, child: new Text("Ok")),
+            ],
+          );
+        });
+      return false;
+    }
+  }
+
+  Future<bool> _showConnectionDialog(String contents) async {
+    var returns = await showDialog(
+      context: context,
+      builder: (BuildContext context){
+        return AlertDialog(
+          content: new Text(contents),
+          actions: <Widget>[
+            new TextButton(onPressed: (){
+              Navigator.pop(context, true);
+            }, child: new Text("Ok")),
+            new TextButton(onPressed: (){
+              Navigator.pop(context, false);
+            }, child: new Text("Cancel"))
+          ],
+        );
+      }
+    );
+
+    return returns;
   }
 
   format(Duration d) => d.toString().split('.').first.padLeft(8,"0");
@@ -105,13 +156,13 @@ class TabBarViewerState extends State<TabBarViewer>
     percentage = "0";
     circularMessage = percentage + "%";
     circularRadius = 150;
-    await downloadYoutube(_url, progressCallback);
+    var urlString = await downloadYoutube(_url, progressCallback);
     var gif = gifMaker();
     circularMessage = "Generating Gif...";
     setState(() {
 
     });
-    String output = await gif.makeGIF(startTimeController.text, endTimeController.text);
+    String output = await gif.makeGIF(startTimeController.text, endTimeController.text, urlString);
     circularRadius = 0;
     setState(() {
       imageCache.clear();
