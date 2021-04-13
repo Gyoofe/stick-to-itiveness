@@ -34,6 +34,7 @@ class gifMaker
     //String inputFilePath = "/data/user/0/com.example.animatedimagemaker/app_flutter/downloads/download.mp4";
     String inputFilePath = '${appDocDirectory.path}/downloads/download.mp4';
     var FFmpegCommand = "-nostdin -ss ${startTime} -t ${duration} -i ${inputFilePath} -vf ${gifOption} -loop 0 ${outputfilepath}";
+    //var FFmpegCommand = "-ss ${startTime} -t ${duration} -i "
 
 
     print(FFmpegCommand);

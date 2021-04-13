@@ -37,7 +37,6 @@ void downloadYoutube(String _youtubeURL, var progressCallback) async
   print('${duration}');
 
   print(url);
-  print("GKGKGKGKGKWKGKSKG");
   print(_youtubeURL);
   print(splits.last);
   var manifest = await yt.videos.streamsClient.getManifest(url);
@@ -45,6 +44,12 @@ void downloadYoutube(String _youtubeURL, var progressCallback) async
   var stream = manifest.muxed;
   var videos = stream.sortByVideoQuality().first;
   var videoStream = yt.videos.streamsClient.get(videos);
+
+  print("STREAM");
+  print(manifest.video.first.url);
+  print(videos.url);
+  print("URL");
+
 
   Directory appDocDirectory = await getExternalStorageDirectory();
 
